@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finanzas Familiares - Control de Gastos</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5.0.8/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@5.0.8/600.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/poppins@500.8/700.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --yellow:#FFC107;
+    --yellow-light:#FFD54F;
+    --yellow-soft:#FFF3CD;
+    --purple:#6A1B9A;
+    --purple-deep:#3A0B5C;
+    --purple-mid:#9C27B0;
+    --purple-soft:#F3E5F5;
+    --red:#D32F2F;
+    --red-soft:#FFEBEE;
+    --bg:#FFF8E1;
+    --card:#FFFFFF;
+    --text:#2D1B4E;
+    --text-muted:#6B5B8A;
+    --border:#E8D9F5;
+    --sidebar-w:260px;
+    --sidebar-collapsed:72px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Poppins',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  /* SIDEBAR */
+  .sidebar{
+    position:fixed;
+    top:0;left:0;
+    width:var(--sidebar-w);
+    height:100vh;
+    background:linear-gradient(180deg,var(--purple-deep) 0%,#2A0845 100%);
+    color:#fff;
+    padding:20px 0;
+    transition:all .3s ease;
+    z-index:100;
+    display:flex;
+    flex-direction:column;
+    box-shadow:4px 0 20px rgba(106,27,154,.15);
+  }
+  .sidebar-header{
+    padding:0 20px 24px;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .logo-icon{
+    width:40px;height:40px;
+    background:linear-gradient(135deg,var(--yellow),var(--red));
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+    flex-shrink:0;
+  }
+  .logo-text h1{font-size:16px;font-weight:600;line-height:1.2}
+  .logo-text p{font-size:11px;opacity:.6;margin-top:2px}
+  .nav-menu{
+    flex:1;
+    padding:20px 12px;
+    overflow-y:auto;
+  }
+  .nav-item{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:12px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    margin-bottom:4px;
+    color:rgba(255,255,255,.7);
+    font-size:14px;
+    font-weight:500;
+    transition:all .2s;
+    border:none;
+    background:transparent;
+    width:100%;
+    text-align:left;
+  }
+  .nav-item:hover{
+    background:rgba(255,193,7,.1);
+    color:var(--yellow-light);
+  }
+  .nav-item.active{
+    background:linear-gradient(90deg,var(--yellow) 0%,rgba(255,193,7,.85) 100%);
+    color:var(--purple-deep);
+    font-weight:600;
+    box-shadow:0 4px 12px rgba(255,193,7,.3);
+  }
+  .nav-item svg{width:20px;height:20px;flex-shrink:0}
+  .sidebar-footer{
+    padding:16px 20px;
+    border-top:1px solid rgba(255,255,255,.08);
+    font-size:11px;
+    opacity:.5;
+    text-align:center;
+  }
+  /* MAIN */
+  .main{
+    margin-left:var(--sidebar-w);
+    min-height:100vh;
+    transition:margin-left .3s ease;
+  }
+  .topbar{
+    background:#fff;
+    padding:16px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:0 2px 8px rgba(106,27,154,.05);
+    position:sticky;top:0;z-index:50;
+  }
+  .topbar-left{display:flex;align-items:center;gap:16px}
+  .menu-toggle{
+    display:none;
+    background:none;border:none;
+    cursor:pointer;padding:6px;
+    color:var(--purple);
+  }
+  .topbar h2{font-size:20px;color:var(--purple-deep);font-weight:600}
+  .topbar-right{display:flex;align-items:center;gap:12px}
+  .date-badge{
+    background:var(--purple-soft);
+    color:var(--purple);
+    padding:6px 14px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+  }
+  .content{padding:28px}
+  .view{display:none;animation:fadeIn .4s ease}
+  .view.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  /* KPI CARDS */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:18px;
+    margin-bottom:24px;
+  }
+  .kpi-card{
+    background:var(--card);
+    border-radius:16px;
+    padding:20px;
+    box-shadow:0 4px 16px rgba(106,27,154,.06);
+    border:1px solid var(--border);
+    position:relative;
+    overflow:hidden;
+  }
+  .kpi-card::before{
+    content:'';
+    position:absolute;
+    top:0;left:0;right:0;
+    height:4px;
+  }
+  .kpi-card.yellow::before{background:linear-gradient(90deg,var(--yellow),var(--yellow-light))}
+  .kpi-card.purple::before{background:linear-gradient(90deg,var(--purple),var(--purple-mid))}
+  .kpi-card.red::before{background:linear-gradient(90deg,var(--red),#FF5252)}
+  .kpi-card.green::before{background:linear-gradient(90deg,#43A047,#66BB6A)}
+  .kpi-label{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  .kpi-value{font-size:26px;font-weight:700;margin-top:8px;color:var(--purple-deep)}
+  .kpi-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+  .kpi-icon{
+    position:absolute;
+    top:18px;right:18px;
+    width:42px;height:42px;
+    border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .kpi-icon.yellow{background:var(--yellow-soft);color:#F57F17}
+  .kpi-icon.purple{background:var(--purple-soft);color:var(--purple)}
+  .kpi-icon.red{background:var(--red-soft);color:var(--red)}
+  .kpi-icon.green{background:#E8F5E9;color:#2E7D32}
+  /* CARDS */
+  .card{
+    background:var(--card);
+    border-radius:16px;
+    padding:22px;
+    box-shadow:0 4px 16px rgba(106,27,154,.06);
+    border:1px solid var(--border);
+    margin-bottom:20px;
+  }
+  .card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .card-title{font-size:16px;font-weight:600;color:var(--purple-deep)}
+  .card-subtitle{font-size:12px;color:var(--text-muted);margin-top:2px}
+  /* GRID */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  /* BUTTONS */
+  .btn{
+    padding:10px 18px;
+    border-radius:10px;
+    border:none;
+    cursor:pointer;
+    font-family:inherit;
+    font-weight:600;
+    font-size:13px;
+    transition:all .2s;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg,var(--purple),var(--purple-mid));
+    color:#fff;
+    box-shadow:0 4px 12px rgba(106,27,154,.25);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(106,27,154,.35)}
+  .btn-yellow{
+    background:linear-gradient(135deg,var(--yellow),var(--yellow-light));
+    color:var(--purple-deep);
+    box-shadow:0 4px 12px rgba(255,193,7,.3);
+  }
+  .btn-yellow:hover{transform:translateY(-2px)}
+  .btn-red{background:var(--red);color:#fff}
+  .btn-red:hover{background:#B71C1C}
+  .btn-ghost{background:transparent;color:var(--purple);border:1px solid var(--border)}
+  .btn-ghost:hover{background:var(--purple-soft)}
+  .btn-sm{padding:6px 12px;font-size:12px}
+  .btn-icon{padding:8px;width:36px;height:36px;justify-content:center}
+  /* FORMS */
+  .form-group{margin-bottom:14px}
+  .form-label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+  }
+  .form-input,.form-select{
+    width:100%;
+    padding:10px 14px;
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    font-family:inherit;
+    font-size:14px;
+    background:#fff;
+    color:var(--text);
+    transition:all .2s;
+  }
+  .form-input:focus,.form-select:focus{
+    outline:none;
+    border-color:var(--purple);
+    box-shadow:0 0 0 3px rgba(156,39,176,.1);
+  }
+  /* TABLE */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse}
+  th{
+    text-align:left;
+    padding:12px 14px;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    color:var(--text-muted);
+    background:var(--purple-soft);
+    font-weight:600;
+    border-bottom:2px solid var(--border);
+  }
+  td{
+    padding:14px;
+    border-bottom:1px solid var(--border);
+    font-size:14px;
+  }
+  tr:hover td{background:#FFFBF0}
+  .badge{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:600;
+  }
+  .badge-yellow{background:var(--yellow-soft);color:#F57F17}
+  .badge-purple{background:var(--purple-soft);color:var(--purple)}
+  .badge-red{background:var(--red-soft);color:var(--red)}
+  .badge-green{background:#E8F5E9;color:#2E7D32}
+  /* MEMBER CARDS */
+  .members-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:16px;
+  }
+  .member-card{
+    background:linear-gradient(135deg,#fff 0%,var(--purple-soft) 100%);
+    border-radius:14px;
+    padding:18px;
+    border:1px solid var(--border);
+    position:relative;
+  }
+  .member-avatar{
+    width:48px;height:48px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--purple),var(--purple-mid));
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:18px;
+    margin-bottom:12px;
+  }
+  .member-name{font-weight:600;font-size:15px;color:var(--purple-deep)}
+  .member-income{font-size:22px;font-weight:700;color:var(--purple);margin-top:6px}
+  .member-actions{
+    position:absolute;top:14px;right:14px;
+    display:flex;gap:6px;
+  }
+  .icon-btn{
+    width:30px;height:30px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    background:rgba(255,255,255,.8);
+    color:var(--purple);
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;
+  }
+  .icon-btn:hover{background:var(--purple);color:#fff}
+  .icon-btn.danger:hover{background:var(--red)}
+  /* CATEGORIES GRID */
+  .categories-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .category-chip{
+    padding:12px;
+    border-radius:12px;
+    border:2px solid var(--border);
+    background:#fff;
+    cursor:pointer;
+    text-align:center;
+    transition:all .2s;
+    font-size:13px;
+    font-weight:500;
+  }
+  .category-chip:hover{border-color:var(--purple)}
+  .category-chip.selected{
+    border-color:var(--purple);
+    background:var(--purple-soft);
+    color:var(--purple);
+  }
+  .category-icon{font-size:22px;display:block;margin-bottom:4px}
+  /* SAVINGS TIPS */
+  .tip-card{
+    padding:16px;
+    border-radius:12px;
+    border-left:4px solid;
+    margin-bottom:12px;
+    background:#fff;
+  }
+  .tip-card.success{border-color:#43A047;background:#F1F8E9}
+  .tip-card.warning{border-color:var(--yellow);background:var(--yellow-soft)}
+  .tip-card.danger{border-color:var(--red);background:var(--red-soft)}
+  .tip-card.info{border-color:var(--purple);background:var(--purple-soft)}
+  .tip-title{font-weight:600;font-size:14px;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+  .tip-text{font-size:13px;color:var(--text-muted);line-height:1.5}
+  /* PROGRESS */
+  .progress-bar{
+    height:8px;
+    background:var(--border);
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:6px;
+  }
+  .progress-fill{
+    height:100%;
+    border-radius:10px;
+    transition:width .6s ease;
+  }
+  .progress-fill.yellow{background:linear-gradient(90deg,var(--yellow),var(--yellow-light))}
+  .progress-fill.purple{background:linear-gradient(90deg,var(--purple),var(--purple-mid))}
+  .progress-fill.red{background:linear-gradient(90deg,var(--red),#FF5252)}
+  /* MODAL */
+  .modal-overlay{
+    position:fixed;inset:0;
+    background:rgba(58,11,92,.5);
+    display:none;
+    align-items:center;justify-content:center;
+    z-index:200;
+    padding:20px;
+    backdrop-filter:blur(4px);
+  }
+  .modal-overlay.active{display:flex}
+  .modal{
+    background:#fff;
+    border-radius:18px;
+    padding:28px;
+    max-width:500px;
+    width:100%;
+    max-height:90vh;
+    overflow-y:auto;
+    box-shadow:0 20px 60px rgba(58,11,92,.3);
+    animation:modalIn .3s ease;
+  }
+  @keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+  .modal-header{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:20px;
+  }
+  .modal-title{font-size:18px;font-weight:600;color:var(--purple-deep)}
+  .close-btn{
+    background:var(--purple-soft);
+    border:none;
+    width:32px;height:32px;
+    border-radius:8px;
+    cursor:pointer;
+    color:var(--purple);
+    font-size:18px;
+  }
+  .close-btn:hover{background:var(--purple);color:#fff}
+  /* EMPTY STATE */
+  .empty-state{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--text-muted);
+  }
+  .empty-state-icon{font-size:50px;margin-bottom:12px;opacity:.5}
+  /* CHART */
+  .chart-container{position:relative;height:280px}
+  /* RESPONSIVE */
+  @media(max-width:900px){
+    .grid-2,.grid-3{grid-template-columns:1fr}
+  }
+  @media(max-width:768px){
+    .sidebar{
+      transform:translateX(-100%);
+      width:var(--sidebar-w);
+    }
+    .sidebar.open{transform:translateX(0)}
+    .main{margin-left:0}
+    .menu-toggle{display:block}
+    .content{padding:18px}
+    .topbar{padding:14px 18px}
+    .topbar h2{font-size:16px}
+    .kpi-value{font-size:22px}
+  }
+  .overlay-bg{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.4);
+    z-index:99;
+  }
+  .overlay-bg.active{display:block}
+  .scroll-area::-webkit-scrollbar{width:6px}
+  .scroll-area::-webkit-scrollbar-track{background:transparent}
+  .scroll-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  .text-right{text-align:right}
+  .amount-positive{color:#2E7D32;font-weight:600}
+  .amount-negative{color:var(--red);font-weight:600}
+  .divider{height:1px;background:var(--border);margin:16px 0}
+  .stat-row{
+    display:flex;justify-content:space-between;
+    padding:10px 0;
+    border-bottom:1px dashed var(--border);
+    font-size:14px;
+  }
+  .stat-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<div class="overlay-bg" id="overlayBg"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-icon">💰</div>
+    <div class="logo-text">
+      <h1>FinanzasFam</h1>
+      <p>Control inteligente</p>
+    </div>
+  </div>
+  <nav class="nav-menu scroll-area">
+    <button class="nav-item active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="nav-item" data-view="members">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Integrantes</span>
+    </button>
+    <button class="nav-item" data-view="expenses">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span>Registrar Gasto</span>
+    </button>
+    <button class="nav-item" data-view="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+      <span>Historial</span>
+    </button>
+    <button class="nav-item" data-view="analysis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Análisis</span>
+    </button>
+    <button class="nav-item" data-view="savings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>
+      <span>Ahorro</span>
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    v1.0 · Datos guardados localmente
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" id="menuToggle">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <h2 id="viewTitle">Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="date-badge" id="currentDate"></span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="kpi-grid">
+        <div class="kpi-card yellow">
+          <div class="kpi-icon yellow">💵</div>
+          <div class="kpi-label">Ingresos del mes</div>
+          <div class="kpi-value" id="kpiIncome">$0</div>
+          <div class="kpi-sub" id="kpiIncomeSub">0 integrantes</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-icon red">💸</div>
+          <div class="kpi-label">Gastos del mes</div>
+          <div class="kpi-value" id="kpiExpense">$0</div>
+          <div class="kpi-sub" id="kpiExpenseSub">0 registros</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-icon green">📊</div>
+          <div class="kpi-label">Balance</div>
+          <div class="kpi-value" id="kpiBalance">$0</div>
+          <div class="kpi-sub" id="kpiBalanceSub">Disponible</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-icon purple">🎯</div>
+          <div class="kpi-label">Ahorro sugerido</div>
+          <div class="kpi-value" id="kpiSavings">$0</div>
+          <div class="kpi-sub">20% de ingresos</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Gastos por categoría</div>
+              <div class="card-subtitle">Distribución mensual</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartCategories"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Ingresos vs Gastos</div>
+              <div class="card-subtitle">Comparativa del mes</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartComparison"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Últimos gastos</div>
+            <div class="card-subtitle">Movimientos recientes</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="switchView('history')">Ver todo →</button>
+        </div>
+        <div class="table-wrap">
+          <table id="recentTable">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Categoría</th>
+                <th>Integrante</th>
+                <th class="text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody id="recentBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- MEMBERS -->
+    <section class="view" id="view-members">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Integrantes de la familia</div>
+            <div class="card-subtitle">Gestiona los ingresos de cada miembro</div>
+          </div>
+          <button class="btn btn-primary" onclick="openMemberModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar integrante
+          </button>
+        </div>
+        <div class="members-grid" id="membersGrid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Resumen de ingresos</div>
+            <div class="card-subtitle">Distribución por integrante</div>
+          </div>
+        </div>
+        <div class="chart-container" style="height:260px">
+          <canvas id="chartMembers"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPENSES -->
+    <section class="view" id="view-expenses">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Registrar nuevo gasto</div>
+            <div class="card-subtitle">Selecciona categoría e ingresa los detalles</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Categoría del gasto</label>
+          <div class="categories-grid" id="categoriesGrid"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Descripción</label>
+            <input type="text" class="form-input" id="expDesc" placeholder="Ej: Compra supermercado">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Monto ($)</label>
+            <input type="number" class="form-input" id="expAmount" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Integrante</label>
+            <select class="form-select" id="expMember"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Fecha</label>
+            <input type="date" class="form-input" id="expDate">
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px">
+          <button class="btn btn-ghost" onclick="resetExpenseForm()">Limpiar</button>
+          <button class="btn btn-yellow" onclick="saveExpense()">
+            💾 Guardar gasto
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">💡 Sugerencia rápida</div>
+            <div class="card-subtitle">Basado en tus gastos actuales</div>
+          </div>
+        </div>
+        <div id="quickTip"></div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="view" id="view-history">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Historial de gastos</div>
+            <div class="card-subtitle">Todos los movimientos registrados</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <select class="form-select" id="filterCategory" style="width:auto" onchange="renderHistory()">
+              <option value="">Todas las categorías</option>
+            </select>
+            <button class="btn btn-red btn-sm" onclick="clearAllExpenses()">🗑️ Limpiar todo</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Descripción</th>
+                <th>Categoría</th>
+                <th>Integrante</th>
+                <th class="text-right">Monto</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYSIS -->
+    <section class="view" id="view-analysis">
+      <div class="kpi-grid">
+        <div class="kpi-card yellow">
+          <div class="kpi-label">Promedio diario</div>
+          <div class="kpi-value" id="avgDaily">$0</div>
+          <div class="kpi-sub">Gasto por día</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-label">% sobre ingresos</div>
+          <div class="kpi-value" id="expenseRatio">0%</div>
+          <div class="kpi-sub">Gastos/Ingresos</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-label">Categoría top</div>
+          <div class="kpi-value" id="topCategory" style="font-size:18px">-</div>
+          <div class="kpi-sub" id="topCategoryAmount">$0</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">Mayor gasto</div>
+          <div class="kpi-value" id="biggestExpense" style="font-size:18px">-</div>
+          <div class="kpi-sub" id="biggestExpenseAmount">$0</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Gastos por integrante</div>
+              <div class="card-subtitle">¿Quién gasta más?</div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <canvas id="chartByMember"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Regla 50/30/20</div>
+              <div class="card-subtitle">Distribución ideal del presupuesto</div>
+            </div>
+          </div>
+          <div id="rule503020"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Evolución de gastos</div>
+            <div class="card-subtitle">Últimos registros</div>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="chartEvolution"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- SAVINGS -->
+    <section class="view" id="view-savings">
+      <div class="card" style="background:linear-gradient(135deg,var(--purple-deep),var(--purple));color:#fff;border:none">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div style="font-size:40px">🎯</div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:13px;opacity:.8;text-transform:uppercase;letter-spacing:1px">Meta de ahorro mensual</div>
+            <div style="font-size:30px;font-weight:700;margin-top:4px" id="savingsGoal">$0</div>
+            <div style="font-size:13px;opacity:.8;margin-top:4px">20% de tus ingresos mensuales</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;opacity:.8">Ahorro actual</div>
+            <div style="font-size:24px;font-weight:700;color:var(--yellow)" id="savingsCurrent">$0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">📊 Diagnóstico financiero</div>
+            <div class="card-subtitle">Análisis personalizado de tu situación</div>
+          </div>
+        </div>
+        <div id="savingsDiagnosis"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">💡 Recomendaciones de ahorro</div>
+            <div class="card-subtitle">Consejos prácticos para tu familia</div>
+          </div>
+        </div>
+        <div id="savingsTips"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">🏆 Plan de acción</div>
+            <div class="card-subtitle">Pasos concretos para alcanzar tu meta</div>
+          </div>
+        </div>
+        <div id="actionPlan"></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- MODAL MEMBER -->
+<div class="modal-overlay" id="memberModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="memberModalTitle">Agregar integrante</div>
+      <button class="close-btn" onclick="closeMemberModal()">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input type="text" class="form-input" id="memberName" placeholder="Ej: Juan Pérez">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Rol en la familia</label>
+      <select class="form-select" id="memberRole">
+        <option>Padre</option>
+        <option>Madre</option>
+        <option>Hijo/a</option>
+        <option>Otro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ingreso mensual ($)</label>
+      <input type="number" class="form-input" id="memberIncome" placeholder="0.00" step="0.01" min="0">
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-ghost" onclick="closeMemberModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMember()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ STATE ============
+const CATEGORIES = [
+  {id:'food', name:'Alimentación', icon:'🛒', color:'#FFC107'},
+  {id:'housing', name:'Vivienda', icon:'🏠', color:'#9C27B0'},
+  {id:'transport', name:'Transporte', icon:'🚗', color:'#D32F2F'},
+  {id:'health', name:'Salud', icon:'💊', color:'#E91E63'},
+  {id:'education', name:'Educación', icon:'📚', color:'#FF9800'},
+  {id:'entertainment', name:'Entretenimiento', icon:'🎬', color:'#673AB7'},
+  {id:'services', name:'Servicios', icon:'💡', color:'#F44336'},
+  {id:'clothing', name:'Ropa', icon:'👕', color:'#FF5722'},
+  {id:'personal', name:'Cuidado personal', icon:'💇', color:'#AB47BC'},
+  {id:'pets', name:'Mascotas', icon:'🐾', color:'#FFB300'},
+  {id:'debts', name:'Deudas', icon:'💳', color:'#C62828'},
+  {id:'other', name:'Otros', icon:'📦', color:'#6A1B9A'}
+];
+
+let state = {
+  members: JSON.parse(localStorage.getItem('fam_members') || '[]'),
+  expenses: JSON.parse(localStorage.getItem('fam_expenses') || '[]'),
+  selectedCategory: null,
+  editingMemberId: null
+};
+
+const save = () => {
+  localStorage.setItem('fam_members', JSON.stringify(state.members));
+  localStorage.setItem('fam_expenses', JSON.stringify(state.expenses));
+};
+
+const fmt = n => '$' + Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// ============ NAVIGATION ============
+const titles = {
+  dashboard:'Dashboard',
+  members:'Integrantes',
+  expenses:'Registrar Gasto',
+  history:'Historial',
+  analysis:'Análisis',
+  savings:'Ahorro'
+};
+
+function switchView(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
+  document.getElementById('viewTitle').textContent = titles[view];
+  if(window.innerWidth<=768){
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlayBg').classList.remove('active');
+  }
+  refreshAll();
+}
+
+document.querySelectorAll('.nav-item').forEach(btn=>{
+  btn.addEventListener('click',()=>switchView(btn.dataset.view));
+});
+
+document.getElementById('menuToggle').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlayBg').classList.toggle('active');
+});
+document.getElementById('overlayBg').addEventListener('click',()=>{
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlayBg').classList.remove('active');
+});
+
+// ============ MEMBERS ============
+function openMemberModal(id=null){
+  state.editingMemberId = id;
+  document.getElementById('memberModalTitle').textContent = id ? 'Editar integrante' : 'Agregar integrante';
+  if(id){
+    const m = state.members.find(x=>x.id===id);
+    document.getElementById('memberName').value = m.name;
+    document.getElementById('memberRole').value = m.role;
+    document.getElementById('memberIncome').value = m.income;
+  } else {
+    document.getElementById('memberName').value = '';
+    document.getElementById('memberRole').value = 'Padre';
+    document.getElementById('memberIncome').value = '';
+  }
+  document.getElementById('memberModal').classList.add('active');
+}
+function closeMemberModal(){
+  document.getElementById('memberModal').classList.remove('active');
+}
+function saveMember(){
+  const name = document.getElementById('memberName').value.trim();
+  const role = document.getElementById('memberRole').value;
+  const income = parseFloat(document.getElementById('memberIncome').value) || 0;
+  if(!name){alert('Ingresa un nombre');return}
+  if(income<=0){alert('Ingresa un ingreso válido');return}
+  if(state.editingMemberId){
+    const m = state.members.find(x=>x.id===state.editingMemberId);
+    m.name = name; m.role = role; m.income = income;
+  } else {
+    state.members.push({id:Date.now().toString(),name,role,income});
+  }
+  save();
+  closeMemberModal();
+  refreshAll();
+}
+function deleteMember(id){
+  if(!confirm('¿Eliminar este integrante? Sus gastos se mantendrán.'))return;
+  state.members = state.members.filter(m=>m.id!==id);
+  save();
+  refreshAll();
+}
+function renderMembers(){
+  const grid = document.getElementById('membersGrid');
+  if(state.members.length===0){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-icon">👨‍👩‍👧</div><p>Aún no hay integrantes. Agrega al primero para comenzar.</p></div>`;
+    return;
+  }
+  grid.innerHTML = state.members.map(m=>{
+    const initial = m.name.charAt(0).toUpperCase();
+    const spent = state.expenses.filter(e=>e.memberId===m.id).reduce((s,e)=>s+e.amount,0);
+    return `
+      <div class="member-card">
+        <div class="member-actions">
+          <button class="icon-btn" onclick="openMemberModal('${m.id}')" title="Editar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="icon-btn danger" onclick="deleteMember('${m.id}')" title="Eliminar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </div>
+        <div class="member-avatar">${initial}</div>
+        <div class="member-name">${m.name}</div>
+        <div style="font-size:12px;color:var(--text-muted)">${m.role}</div>
+        <div class="member-income">${fmt(m.income)}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Gastado: <span class="amount-negative">${fmt(spent)}</span></div>
+        <div class="progress-bar">
+          <div class="progress-fill ${spent>m.income?'red':spent>m.income*.7?'yellow':'purple'}" style="width:${Math.min(100,(spent/m.income)*100)}%"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ============ EXPENSES ============
+function renderCategories(){
+  const grid = document.getElementById('categoriesGrid');
+  grid.innerHTML = CATEGORIES.map(c=>`
+    <div class="category-chip ${state.selectedCategory===c.id?'selected':''}" onclick="selectCategory('${c.id}')">
+      <span class="category-icon">${c.icon}</span>
+      ${c.name}
+    </div>
+  `).join('');
+}
+function selectCategory(id){
+  state.selectedCategory = id;
+  renderCategories();
+}
+function renderMemberSelect(){
+  const sel = document.getElementById('expMember');
+  if(state.members.length===0){
+    sel.innerHTML = '<option value="">Primero agrega integrantes</option>';
+    return;
+  }
+  sel.innerHTML = state.members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+}
+function saveExpense(){
+  if(!state.selectedCategory){alert('Selecciona una categoría');return}
+  const desc = document.getElementById('expDesc').value.trim();
+  const amount = parseFloat(document.getElementById('expAmount').value);
+  const memberId = document.getElementById('expMember').value;
+  const date = document.getElementById('expDate').value;
+  if(!desc){alert('Ingresa una descripción');return}
+  if(!amount||amount<=0){alert('Ingresa un monto válido');return}
+  if(!memberId){alert('Selecciona un integrante');return}
+  if(!date){alert('Selecciona una fecha');return}
+  state.expenses.push({
+    id:Date.now().toString(),
+    categoryId:state.selectedCategory,
+    description:desc,
+    amount,
+    memberId,
+    date
+  });
+  save();
+  resetExpenseForm();
+  refreshAll();
+  showNotification('✅ Gasto registrado correctamente');
+}
+function resetExpenseForm(){
+  state.selectedCategory = null;
+  document.getElementById('expDesc').value = '';
+  document.getElementById('expAmount').value = '';
+  document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+  renderCategories();
+}
+function deleteExpense(id){
+  if(!confirm('¿Eliminar este gasto?'))return;
+  state.expenses = state.expenses.filter(e=>e.id!==id);
+  save();
+  refreshAll();
+}
+function clearAllExpenses(){
+  if(!confirm('¿Eliminar TODOS los gastos? Esta acción no se puede deshacer.'))return;
+  state.expenses = [];
+  save();
+  refreshAll();
+}
+function renderHistory(){
+  const body = document.getElementById('historyBody');
+  const filter = document.getElementById('filterCategory').value;
+  let list = [...state.expenses].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(filter) list = list.filter(e=>e.categoryId===filter);
+  if(list.length===0){
+    body.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-state-icon">📝</div><p>No hay gastos registrados</p></div></td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(e=>{
+    const cat = CATEGORIES.find(c=>c.id===e.categoryId);
+    const mem = state.members.find(m=>m.id===e.memberId);
+    return `<tr>
+      <td>${new Date(e.date).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'})}</td>
+      <td><strong>${e.description}</strong></td>
+      <td><span class="badge badge-purple">${cat?cat.icon+' '+cat.name:'-'}</span></td>
+      <td>${mem?mem.name:'-'}</td>
+      <td class="text-right amount-negative">${fmt(e.amount)}</td>
+      <td><button class="icon-btn danger" onclick="deleteExpense('${e.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button></td>
+    </tr>`;
+  }).join('');
+}
+function renderRecent(){
+  const body = document.getElementById('recentBody');
+  const list = [...state.expenses].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  if(list.length===0){
+    body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📭</div><p>Sin movimientos aún</p></div></td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(e=>{
+    const cat = CATEGORIES.find(c=>c.id===e.categoryId);
+    const mem = state.members.find(m=>m.id===e.memberId);
+    return `<tr>
+      <td>${new Date(e.date).toLocaleDateString('es-MX',{day:'2-digit',month:'short'})}</td>
+      <td>${e.description}</td>
+      <td><span class="badge badge-purple">${cat?cat.icon+' '+cat.name:'-'}</span></td>
+      <td>${mem?mem.name:'-'}</td>
+      <td class="text-right amount-negative">${fmt(e.amount)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ============ FILTER DROPDOWN ============
+function renderFilterCategory(){
+  const sel = document.getElementById('filterCategory');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Todas las categorías</option>' + CATEGORIES.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  sel.value = current;
+}
+
+// ============ KPI ============
+function renderKPI(){
+  const income = state.members.reduce((s,m)=>s+m.income,0);
+  const expense = state.expenses.reduce((s,e)=>s+e.amount,0);
+  const balance = income - expense;
+  const savings = income * 0.2;
+  document.getElementById('kpiIncome').textContent = fmt(income);
+  document.getElementById('kpiIncomeSub').textContent = `${state.members.length} integrante${state.members.length!==1?'s':''}`;
+  document.getElementById('kpiExpense').textContent = fmt(expense);
+  document.getElementById('kpiExpenseSub').textContent = `${state.expenses.length} registro${state.expenses.length!==1?'s':''}`;
+  document.getElementById('kpiBalance').textContent = fmt(balance);
+  document.getElementById('kpiBalance').textContent = fmt(balance);
+  document.getElementById('kpiBalanceSub').textContent = balance>=0?'Disponible':'Déficit';
+  document.getElementById('kpiBalance').style.color = balance>=0?'#2E7D32':'#D32F2F';
+  document.getElementById('kpiSavings').textContent = fmt(savings);
+}
+
+// ============ CHARTS ============
+let charts = {};
+function destroyChart(key){
+  if(charts[key]){charts[key].destroy();charts[key]=null}
+}
+function renderCharts(){
+  // Categories pie
+  destroyChart('cat');
+  const catTotals = {};
+  state.expenses.forEach(e=>{
+    catTotals[e.categoryId] = (catTotals[e.categoryId]||0) + e.amount;
+  });
+  const catLabels = Object.keys(catTotals).map(id=>{
+    const c = CATEGORIES.find(x=>x.id===id);
+    return c?c.name:'-';
+  });
+  const catData = Object.values(catTotals);
+  const catColors = Object.keys(catTotals).map(id=>{
+    const c = CATEGORIES.find(x=>x.id===id);
+    return c?c.color:'#999';
+  });
+  if(catData.length>0){
+    const ctx = document.getElementById('chartCategories').getContext('2d');
+    charts.cat = new Chart(ctx,{
+      type:'doughnut',
+      data:{labels:catLabels,datasets:[{data:catData,backgroundColor:catColors,borderWidth:2,borderColor:'#fff'}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Poppins',size:11}}}}}
+    });
+  }
+
+  // Comparison bar
+  destroyChart('comp');
+  const income = state.members.reduce((s,m)=>s+m.income,0);
+  const expense = state.expenses.reduce((s,e)=>s+e.amount,0);
+  const ctx2 = document.getElementById('chartComparison').getContext('2d');
+  charts.comp = new Chart(ctx2,{
+    type:'bar',
+    data:{
+      labels:['Ingresos','Gastos','Balance'],
+      datasets:[{
+        data:[income,expense,income-expense],
+        backgroundColor:['#FFC107','#D32F2F','#9C27B0'],
+        borderRadius:8,
+        barThickness:50
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v,font:{family:'Poppins'}}},x:{ticks:{font:{family:'Poppins'}}}}
+    }
+  });
+
+  // Members pie
+  destroyChart('mem');
+  const memTotals = {};
+  state.members.forEach(m=>memTotals[m.id]=m.income);
+  const ctx3 = document.getElementById('chartMembers').getContext('2d');
+  charts.mem = new Chart(ctx3,{
+    type:'pie',
+    data:{
+      labels:state.members.map(m=>m.name),
+      datasets:[{data:Object.values(memTotals),backgroundColor:['#FFC107','#9C27B0','#D32F2F','#FF9800','#673AB7','#E91E63'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Poppins',size:11}}}}}
+  });
+
+  // By member bar
+  destroyChart('bymem');
+  const memExp = {};
+  state.members.forEach(m=>memExp[m.id]=0);
+  state.expenses.forEach(e=>{if(memExp[e.memberId]!==undefined)memExp[e.memberId]+=e.amount});
+  const ctx4 = document.getElementById('chartByMember').getContext('2d');
+  charts.bymem = new Chart(ctx4,{
+    type:'bar',
+    data:{
+      labels:state.members.map(m=>m.name),
+      datasets:[{
+        label:'Gastado',
+        data:Object.values(memExp),
+        backgroundColor:'#D32F2F',
+        borderRadius:8
+      },{
+        label:'Ingreso',
+        data:state.members.map(m=>m.income),
+        backgroundColor:'#FFC107',
+        borderRadius:8
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{family:'Poppins'}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v,font:{family:'Poppins'}}},x:{ticks:{font:{family:'Poppins'}}}}
+    }
+  });
+
+  // Evolution line
+  destroyChart('evo');
+  const sorted = [...state.expenses].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let acc = 0;
+  const evoData = sorted.map(e=>{acc+=e.amount;return acc});
+  const ctx5 = document.getElementById('chartEvolution').getContext('2d');
+  charts.evo = new Chart(ctx5,{
+    type:'line',
+    data:{
+      labels:sorted.map(e=>new Date(e.date).toLocaleDateString('es-MX',{day:'2-digit',month:'short'})),
+      datasets:[{
+        label:'Gasto acumulado',
+        data:evoData,
+        borderColor:'#9C27B0',
+        backgroundColor:'rgba(156,39,176,.15)',
+        fill:true,
+        tension:.4,
+        pointBackgroundColor:'#FFC107',
+        pointRadius:4,
+        pointBorderWidth:2,
+        pointBorderColor:'#9C27B0'
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{family:'Poppins'}}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>'$'+v,font:{family:'Poppins'}}},x:{ticks:{font:{family:'Poppins',size:10}}}}
+    }
+  });
+}
+
+// ============ ANALYSIS ============
+function renderAnalysis(){
+  const income = state.members.reduce((s,m)=>s+m.income,0);
+  const expense = state.expenses.reduce((s,e)=>s+e.amount,0);
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+  const avgDaily = dayOfMonth>0 ? expense/dayOfMonth : 0;
+  const ratio = income>0 ? (expense/income)*100 : 0;
+  document.getElementById('avgDaily').textContent = fmt(avgDaily);
+  document.getElementById('expenseRatio').textContent = ratio.toFixed(1)+'%';
+  document.getElementById('expenseRatio').style.color = ratio>80?'#D32F2F':ratio>60?'#F57F17':'#2E7D32';
+
+  // Top category
+  const catTotals = {};
+  state.expenses.forEach(e=>{catTotals[e.categoryId]=(catTotals[e.categoryId]||0)+e.amount});
+  const topCatId = Object.keys(catTotals).sort((a,b)=>catTotals[b]-catTotals[a])[0];
+  if(topCatId){
+    const c = CATEGORIES.find(x=>x.id===topCatId);
+    document.getElementById('topCategory').textContent = c?c.icon+' '+c.name:'-';
+    document.getElementById('topCategoryAmount').textContent = fmt(catTotals[topCatId]);
+  } else {
+    document.getElementById('topCategory').textContent = '-';
+    document.getElementById('topCategoryAmount').textContent = '$0';
+  }
+
+  // Biggest expense
+  const biggest = [...state.expenses].sort((a,b)=>b.amount-a.amount)[0];
+  if(biggest){
+    document.getElementById('biggestExpense').textContent = biggest.description.substring(0,20);
+    document.getElementById('biggestExpenseAmount').textContent = fmt(biggest.amount);
+  }
+
+  // 50/30/20 rule
+  const needs = income*0.5;
+  const wants = income*0.3;
+  const savings = income*0.2;
+  const needsActual = state.expenses.filter(e=>['food','housing','transport','services','health'].includes(e.categoryId)).reduce((s,e)=>s+e.amount,0);
+  const wantsActual = state.expenses.filter(e=>['entertainment','clothing','personal','pets'].includes(e.categoryId)).reduce((s,e)=>s+e.amount,0);
+  const savingsActual = Math.max(0, income - expense);
+
+  const rule = document.getElementById('rule503020');
+  rule.innerHTML = `
+    <div style="margin-bottom:18px">
+      <div class="flex-between" style="margin-bottom:4px">
+        <div><strong>🏠 Necesidades (50%)</strong><div style="font-size:12px;color:var(--text-muted)">Alimentación, vivienda, servicios, salud</div></div>
+        <div class="text-right"><strong>${fmt(needsActual)}</strong><div style="font-size:12px;color:var(--text-muted)">de ${fmt(needs)}</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${needsActual>needs?'red':'purple'}" style="width:${Math.min(100,(needsActual/needs)*100)}%"></div></div>
+    </div>
+    <div style="margin-bottom:18px">
+      <div class="flex-between" style="margin-bottom:4px">
+        <div><strong>🎬 Deseos (30%)</strong><div style="font-size:12px;color:var(--text-muted)">Entretenimiento, ropa, gustos</div></div>
+        <div class="text-right"><strong>${fmt(wantsActual)}</strong><div style="font-size:12px;color:var(--text-muted)">de ${fmt(wants)}</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${wantsActual>wants?'red':'yellow'}" style="width:${Math.min(100,(wantsActual/wants)*100)}%"></div></div>
+    </div>
+    <div>
+      <div class="flex-between" style="margin-bottom:4px">
+        <div><strong>💰 Ahorro (20%)</strong><div style="font-size:12px;color:var(--text-muted)">Meta mensual recomendada</div></div>
+        <div class="text-right"><strong>${fmt(savingsActual)}</strong><div style="font-size:12px;color:var(--text-muted)">de ${fmt(savings)}</div></div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${savingsActual>=savings?'green':'yellow'}" style="width:${Math.min(100,(savingsActual/savings)*100)}%"></div></div>
+    </div>
+  `;
+}
+
+// ============ SAVINGS ============
+function renderSavings(){
+  const income = state.members.reduce((s,m)=>s+m.income,0);
+  const expense = state.expenses.reduce((s,e)=>s+e.amount,0);
+  const balance = income - expense;
+  const goal = income * 0.2;
+  document.getElementById('savingsGoal').textContent = fmt(goal);
+  document.getElementById('savingsCurrent').textContent = fmt(Math.max(0,balance));
+
+  const diagnosis = document.getElementById('savingsDiagnosis');
+  const tips = document.getElementById('savingsTips');
+  const plan = document.getElementById('actionPlan');
+
+  if(income===0){
+    diagnosis.innerHTML = `<div class="tip-card warning"><div class="tip-title">⚠️ Sin ingresos registrados</div><div class="tip-text">Agrega los integrantes de tu familia y sus ingresos mensuales para obtener un diagnóstico personalizado.</div></div>`;
+    tips.innerHTML = '';
+    plan.innerHTML = '';
+    return;
+  }
+
+  const ratio = (expense/income)*100;
+  let diagHTML = '';
+  if(ratio>100){
+    diagHTML = `<div class="tip-card danger"><div class="tip-title">🚨 ¡Alerta! Estás gastando más de lo que ingresas</div><div class="tip-text">Tus gastos (${fmt(expense)}) superan tus ingresos (${fmt(income)}). Estás generando un déficit de <strong>${fmt(Math.abs(balance))}</strong>. Es urgente reducir gastos o buscar fuentes adicionales de ingreso.</div></div>`;
+  } else if(ratio>80){
+    diagHTML = `<div class="tip-card danger"><div class="tip-title">⚠️ Situación crítica: gastas el ${ratio.toFixed(1)}% de tus ingresos</div><div class="tip-text">Solo te queda ${fmt(balance)} y la meta de ahorro es ${fmt(goal)}. Necesitas recortar al menos ${fmt(goal-balance>0?goal-balance:0)} para alcanzar el 20% de ahorro recomendado.</div></div>`;
+  } else if(ratio>60){
+    diagHTML = `<div class="tip-card warning"><div class="tip-title">💛 Situación mejorable: gastas el ${ratio.toFixed(1)}%</div><div class="tip-text">Vas por buen camino pero aún puedes optimizar. Con pequeños ajustes puedes alcanzar tu meta de ahorro de ${fmt(goal)}.</div></div>`;
+  } else if(ratio>=40){
+    diagHTML = `<div class="tip-card success"><div class="tip-title">✅ ¡Buen trabajo! Gastas el ${ratio.toFixed(1)}% de tus ingresos</div><div class="tip-text">Tu situación es saludable. Estás cerca (o ya lograste) tu meta de ahorro del 20%. Sigue así.</div></div>`;
+  } else {
+    diagHTML = `<div class="tip-card success"><div class="tip-title">🏆 ¡Excelente! Gastas solo el ${ratio.toFixed(1)}%</div><div class="tip-text">Tus finanzas están muy bien controladas. Estás ahorrando más del 20% recomendado. ¡Felicidades!</div></div>`;
+  }
+  diagnosis.innerHTML = diagHTML;
+
+  // Tips based on categories
+  const catTotals = {};
+  state.expenses.forEach(e=>{catTotals[e.categoryId]=(catTotals[e.categoryId]||0)+e.amount});
+  const sortedCats = Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+  const topCat = sortedCats[0];
+
+  let tipsHTML = '';
+  if(topCat){
+    const cat = CATEGORIES.find(c=>c.id===topCat[0]);
+    const pct = (topCat[1]/income)*100;
+    if(topCat[0]==='food' && pct>25){
+      tipsHTML += `<div class="tip-card warning"><div class="tip-title">🛒 Alimentación representa el ${pct.toFixed(1)}% de tus ingresos</div><div class="tip-text">• Planifica menús semanales para evitar compras impulsivas.<br>• Compra a granel y en mercados locales.<br>• Cocina en casa y lleva lunch al trabajo.<br>• Aprovecha ofertas y compara precios.</div></div>`;
+    }
+    if(topCat[0]==='entertainment' && pct>10){
+      tipsHTML += `<div class="tip-card warning"><div class="tip-title">🎬 Entretenimiento está consumiendo el ${pct.toFixed(1)}%</div><div class="tip-text">• Busca actividades gratuitas: parques, museos, eventos comunitarios.<br>• Suscríbete a servicios compartidos en familia.<br>• Establece un tope mensual de ocio.</div></div>`;
+    }
+    if(topCat[0]==='transport' && pct>15){
+      tipsHTML += `<div class="tip-card warning"><div class="tip-title">🚗 Transporte representa el ${pct.toFixed(1)}%</div><div class="tip-text">• Considera transporte público o bicicleta para trayectos cortos.<br>• Comparte auto con familiares o vecinos (carpooling).<br>• Mantén tu vehículo para optimizar consumo de combustible.</div></div>`;
+    }
+    if(topCat[0]==='debts'){
+      tipsHTML += `<div class="tip-card danger"><div class="tip-title">💳 Prioriza eliminar deudas</div><div class="tip-text">• Usa el método "bola de nieve": paga primero la deuda más pequeña.<br>• Negocia tasas de interés más bajas.<br>• Evita contraer nuevas deudas mientras pagas las actuales.</div></div>`;
+    }
+  }
+
+  // General tips
+  tipsHTML += `<div class="tip-card info"><div class="tip-title">💡 Regla 50/30/20</div><div class="tip-text">Destina el 50% a necesidades básicas, 30% a deseos personales y 20% al ahorro. Con tus ingresos de ${fmt(income)}, esto sería:<br>• Necesidades: ${fmt(income*0.5)}<br>• Deseos: ${fmt(income*0.3)}<br>• Ahorro: ${fmt(income*0.2)}</div></div>`;
+
+  tipsHTML += `<div class="tip-card info"><div class="tip-title">🎯 Fondo de emergencia</div><div class="tip-text">Ahorra equivalente a 3-6 meses de gastos. Con tus gastos actuales (${fmt(expense)}), tu fondo ideal sería de <strong>${fmt(expense*3)} a ${fmt(expense*6)}</strong>.</div></div>`;
+
+  tipsHTML += `<div class="tip-card success"><div class="tip-title">📱 Automatiza tu ahorro</div><div class="tip-text">Configura una transferencia automática el día de pago hacia una cuenta de ahorro. "Págate a ti primero" es la estrategia más efectiva.</div></div>`;
+
+  tips.innerHTML = tipsHTML;
+
+  // Action plan
+  const steps = [];
+  if(state.members.length===0){
+    steps.push({t:'Registrar integrantes',d:'Agrega a todos los miembros de tu familia con sus ingresos.',done:false});
+  } else {
+    steps.push({t:'Integrantes registrados',d:`Tienes ${state.members.length} integrante(s) con ingresos definidos.`,done:true});
+  }
+  if(state.expenses.length>0){
+    steps.push({t:'Control de gastos activo',d:`Has registrado ${state.expenses.length} gasto(s).`,done:true});
+  }
+  if(balance>=goal){
+    steps.push({t:'Meta de ahorro alcanzada',d:`¡Felicidades! Ya superaste tu meta de ${fmt(goal)}.`,done:true});
+  } else {
+    steps.push({t:`Ahorra ${fmt(goal-balance)} más este mes`,d:`Te faltan ${fmt(Math.max(0,goal-balance))} para alcanzar tu meta del 20%.`,done:false});
+  }
+  if(ratio<=60){
+    steps.push({t:'Ratio de gastos saludable',d:'Tus gastos están por debajo del 60% de tus ingresos.',done:true});
+  } else {
+    steps.push({t:'Reducir gastos al 60%',d:`Actualmente gastas el ${ratio.toFixed(1)}%. Busca reducir al menos un 20%.`,done:false});
+  }
+  steps.push({t:'Revisar suscripciones',d:'Cancela servicios que no uses: streaming, gimnasio, apps.',done:false});
+  steps.push({t:'Cocinar en casa',d:'Reducir comidas fuera puede ahorrarte hasta 30% en alimentación.',done:false});
+
+  plan.innerHTML = steps.map(s=>`
+    <div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:${s.done?'#F1F8E9':'#FFF8E1'};margin-bottom:8px">
+      <div style="width:24px;height:24px;border-radius:50%;background:${s.done?'#43A047':'var(--yellow)'};color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700">${s.done?'✓':'•'}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:14px;${s.done?'text-decoration:line-through;opacity:.6':''}">${s.t}</div><div style="font-size:12px;color:var(--text-muted);margin-top:2px">${s.d}</div></div>
+    </div>
+  `).join('');
+}
+
+// ============ QUICK TIP ============
+function renderQuickTip(){
+  const tip = document.getElementById('quickTip');
+  if(state.expenses.length===0){
+    tip.innerHTML = `<div class="tip-card info"><div class="tip-title">💡 Comienza a registrar</div><div class="tip-text">Anota cada gasto, por pequeño que sea. La conciencia del gasto es el primer paso para ahorrar.</div></div>`;
+    return;
+  }
+  const income = state.members.reduce((s,m)=>s+m.income,0);
+  const expense = state.expenses.reduce((s,e)=>s+e.amount,0);
+  const ratio = income>0?(expense/income)*100:0;
+  const catTotals = {};
+  state.expenses.forEach(e=>{catTotals[e.categoryId]=(catTotals[e.categoryId]||0)+e.amount});
+  const topCatId = Object.keys(catTotals).sort((a,b)=>catTotals[b]-catTotals[a])[0];
+  const topCat = CATEGORIES.find(c=>c.id===topCatId);
+
+  let html = '';
+  if(ratio>80){
+    html = `<div class="tip-card danger"><div class="tip-title">🚨 ¡Cuidado! Vas al ${ratio.toFixed(0)}% de tus ingresos</div><div class="tip-text">Has gastado ${fmt(expense)} de ${fmt(income)}. Reduce gastos esenciales o busca ingresos extra antes de que termine el mes.</div></div>`;
+  } else if(topCat && topCat[0]==='food' && catTotals.food>income*0.25){
+    html = `<div class="tip-card warning"><div class="tip-title">🛒 Tu gasto en alimentación es alto</div><div class="tip-text">Llevas ${fmt(catTotals.food)} en comida. Intenta planificar menús y cocinar en casa para reducir este rubro.</div></div>`;
+  } else {
+    html = `<div class="tip-card success"><div class="tip-title">✅ Vas por buen camino</div><div class="tip-text">Llevas gastado el ${ratio.toFixed(1)}% de tus ingresos. Si mantienes el ritmo, podrás ahorrar ${fmt(Math.max(0,income-expense-(income*0.2)))} este mes.</div></div>`;
+  }
+  tip.innerHTML = html;
+}
+
+// ============ NOTIFICATION ============
+function showNotification(msg){
+  const n = document.createElement('div');
+  n.style.cssText = 'position:fixed;bottom:20px;right:20px;background:linear-gradient(135deg,#6A1B9A,#9C27B0);color:#fff;padding:14px 22px;border-radius:12px;box-shadow:0 8px 24px rgba(106,27,154,.3);z-index:300;font-weight:600;font-size:14px;animation:modalIn .3s ease';
+  n.textContent = msg;
+  document.body.appendChild(n);
+  setTimeout(()=>n.remove(),2500);
+}
+
+// ============ REFRESH ============
+function refreshAll(){
+  renderKPI();
+  renderMembers();
+  renderMemberSelect();
+  renderCategories();
+  renderRecent();
+  renderHistory();
+  renderFilterCategory();
+  renderCharts();
+  renderAnalysis();
+  renderSavings();
+  renderQuickTip();
+}
+
+// ============ INIT ============
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+
+// Demo data if empty
+if(state.members.length===0 && state.expenses.length===0){
+  state.members = [
+    {id:'1',name:'Carlos',role:'Padre',income:25000},
+    {id:'2',name:'María',role:'Madre',income:18000}
+  ];
+  const today = new Date();
+  const day = (d)=>{const x=new Date(today);x.setDate(x.getDate()-d);return x.toISOString().split('T')[0]};
+  state.expenses = [
+    {id:'e1',categoryId:'food',description:'Supermercado semanal',amount:1850,memberId:'1',date:day(1)},
+    {id:'e2',categoryId:'services',description:'Luz y agua',amount:950,memberId:'2',date:day(2)},
+    {id:'e3',categoryId:'transport',description:'Gasolina',amount:800,memberId:'1',date:day(3)},
+    {id:'e4',categoryId:'entertainment',description:'Cine familiar',amount:450,memberId:'2',date:day(4)},
+    {id:'e5',categoryId:'food',description:'Restaurante',amount:680,memberId:'1',date:day(5)},
+    {id:'e6',categoryId:'health',description:'Farmacia',amount:320,memberId:'2',date:day(6)},
+    {id:'e7',categoryId:'education',description:'Útiles escolares',amount:550,memberId:'2',date:day(7)}
+  ];
+  save();
+}
+
+refreshAll();
+</script>
+</body>
+</html>
